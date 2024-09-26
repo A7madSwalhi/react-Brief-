@@ -411,20 +411,20 @@ body {
   left: 0;
   z-index: 1;
   overflow: hidden;
-  background: linear-gradient(150deg, #1d8cf8 20%, #3358f4 100%);
+  background: linear-gradient(150deg, #4400ff 20%, #f000ff 100%);
 }
-.theme-orange .profile-page .bg div {
+/* .theme-orange .profile-page .bg div {
   background: linear-gradient(150deg, #ff4086 20%, #fd8d76 100%);
-}
-.theme-purple .profile-page .bg div {
+} */
+/* .theme-purple .profile-page .bg div {
   background: linear-gradient(150deg, #8700ff 20%, #f000ff 100%);
-}
-.theme-green .profile-page .bg div {
+} */
+/* .theme-green .profile-page .bg div {
   background: linear-gradient(150deg, #1dcc45 20%, #42b883 100%);
-}
-.theme-blue .profile-page .bg div {
+} */
+/* .theme-blue .profile-page .bg div {
   background: linear-gradient(150deg, #0098f0 20%, #00f2c3 100%);
-}
+} */
 .profile-page .bg span:nth-child(1) {
   display: block;
   position: absolute;
