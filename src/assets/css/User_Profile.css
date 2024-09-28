@@ -1,3 +1,6 @@
+/* Profile.css */
+
+
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -9,9 +12,10 @@ body {
     align-items: center;
     padding: 0 30px;
 }
-#root{
+.content{
     display: flex;
     flex-direction: row;
+    margin: 30px 0;
     
 }
 .profile-container {
@@ -42,7 +46,7 @@ body {
     height: 100px;
     border-radius: 50%;
     margin-right: 20px;
-    border: 4px solid #ff660079;
+    border: 4px solid #eae2fe;
 }
 
 .profile-content {
@@ -52,7 +56,7 @@ body {
 
 .profile-content label {
     font-weight: bold;
-    color: #ff6600;
+    color: #a14ef9;
 }
 
 .profile-content input,
@@ -74,7 +78,7 @@ body {
 
 .profile-content button,
 .my_a {
-    background-color: #ff6600;
+    background-color: #a14ef9;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -121,7 +125,7 @@ h2 {
 }
 
 .status-table th {
-    background-color: #ff6600;
+    background-color: #a14ef9;
     color: white;
 }
 
