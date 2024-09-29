@@ -11,6 +11,8 @@ body {
     /* justify-content: center; */
     align-items: center;
     padding: 0 30px;
+
+    position: relative;
 }
 .content{
     display: flex;
@@ -78,7 +80,7 @@ body {
 
 .profile-content button,
 .my_a {
-    background-color: #a14ef9;
+    background-color: #9667ef;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -89,7 +91,8 @@ body {
 
 .profile-content button:hover,
 .my_a:hover {
-    background-color: #e65c00;
+    background-color: #9436f8;
+    /* background-color: #e65c00; */
     color: #fff;
 }
 

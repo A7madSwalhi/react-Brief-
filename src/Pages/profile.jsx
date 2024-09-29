@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "firebase/firestore"; // Firestore methods
+import { doc, getDoc, updateDoc, collection, getDocs, query, where, addDoc } from "firebase/firestore"; // Firestore methods
 import '../assets/css/User_Profile.css';
+import '../assets/css/profile_user_pop.css';
 
-// import { Timestamp } from "firebase/firestore"; 
+// import Header from "../Components/Header";
+// import Footer from "../Components/Footer";
 
 const Profile = () => {
     const [user, setUser] = useState({
@@ -12,24 +14,25 @@ const Profile = () => {
         phone: '',
     });
 
-    // const [statusData, setStatusData] = useState([]);
-    const [coursesData, setCoursesData] = useState([]); // State for courses data
+    const [coursesData, setCoursesData] = useState([]);
+    const [allCourses, setAllCourses] = useState([]); // State to hold all available courses
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
+    const [newSubscription, setNewSubscription] = useState({
+        courseID: '',
+    });
 
-    // Fetch user data from Firestore where id = 1
+    // Fetch user data from Firestore
     useEffect(() => {
         const fetchUser = async () => {
-            const userId = 'Ha6ncx164GbU3nT7THMtCVwM8M93'; // Set the user ID to 1 (or another relevant ID)
-            const userDoc = await getDoc(doc(db, "users", userId)); // Fetch the document with ID 1
+            const userId = 'Ha6ncx164GbU3nT7THMtCVwM8M93';
+            const userDoc = await getDoc(doc(db, "users", userId));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-
-                // Set user data with the combined name
                 setUser({
                     name: userData.name,
                     email: userData.email,
                     phone: userData.phone,
                 });
-                
             } else {
                 console.log("User does not exist.");
             }
@@ -38,67 +41,114 @@ const Profile = () => {
     }, []);
 
 
-    useEffect(() => {
-        const fetchCourses = async () => {
-            const userID = 'Ha6ncx164GbU3nT7THMtCVwM8M93';
-            const subscriptionsCol = collection(db, 'subscriptions');
-            const q = query(subscriptionsCol, where("userID", "==", userID));
-    
-            try {
-                const subscriptionSnapshot = await getDocs(q);
-                const subscriptionList = subscriptionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-                if (subscriptionList.length > 0) {
-                    const courseIDs = subscriptionList.map(subscription => subscription.courseID);
-    
-                    // Instead of fetching courses with courseIDs, you can directly fetch from the courses collection
-                    const coursesCol = collection(db, 'courses');
-                    const coursesPromises = courseIDs.map(courseID => getDoc(doc(coursesCol, courseID))); // Fetch each course directly by ID
-                    const coursesSnapshots = await Promise.all(coursesPromises);
-                    const coursesList = coursesSnapshots.map((snapshot, index) => ({
-                        id: snapshot.id,
-                        ...snapshot.data(),
-                        endDate: subscriptionList[index].endDate // Get the endDate from subscriptions
-                    }));
-    
-                    setCoursesData(coursesList);
-                    console.log(coursesList);
-                } else {
-                    console.log(`No subscriptions found for userID = ${userID}.`);
-                }
-            } catch (error) {
-                console.error("Error fetching courses:", error);
-            }
-        };
-        fetchCourses();
-    }, []);
-    
-    
-    
-    
-    
-    
+    const [currentPage, setCurrentPage] = useState(1);
+    const coursesPerPage = 5; // عدد الدورات التي سيتم عرضها لكل صفحة
+
+    const startIndex = (currentPage - 1) * coursesPerPage;
+    const endIndex = startIndex + coursesPerPage;
+    const currentCourses = coursesData.slice(startIndex, endIndex);
     
 
-    // Handle form input changes
+    // Fetch user's subscribed courses
+// Fetch user's subscribed courses where status is 'accepted'
+useEffect(() => {
+    const fetchCourses = async () => {
+        const userID = 'Ha6ncx164GbU3nT7THMtCVwM8M93';
+        const subscriptionsCol = collection(db, 'subscriptions');
+        const q = query(
+            subscriptionsCol, 
+            where("userID", "==", userID), 
+            where("status", "==", "accepted") // Filter by accepted status
+        );
+
+        try {
+            const subscriptionSnapshot = await getDocs(q);
+            const subscriptionList = subscriptionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (subscriptionList.length > 0) {
+                const courseIDs = subscriptionList.map(subscription => subscription.courseID);
+                const coursesCol = collection(db, 'courses');
+                const coursesPromises = courseIDs.map(courseID => getDoc(doc(coursesCol, courseID)));
+                const coursesSnapshots = await Promise.all(coursesPromises);
+                const coursesList = coursesSnapshots.map((snapshot, index) => ({
+                    id: snapshot.id,
+                    ...snapshot.data(),
+                    endDate: subscriptionList[index].endDate
+                }));
+                setCoursesData(coursesList);
+            } else {
+                console.log(`No accepted subscriptions found for userID = ${userID}.`);
+            }
+        } catch (error) {
+            console.error("Error fetching courses:", error);
+        }
+    };
+    fetchCourses();
+}, []);
+
+
+    // Fetch all available courses for the select dropdown
+    useEffect(() => {
+        const fetchAllCourses = async () => {
+            try {
+                const coursesSnapshot = await getDocs(collection(db, 'courses'));
+                const coursesList = coursesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+                setAllCourses(coursesList); // Save all courses to state
+            } catch (error) {
+                console.error("Error fetching all courses:", error);
+            }
+        };
+        fetchAllCourses();
+    }, []);
+
+    // Handle input changes for the new subscription form
+    const handleSubscriptionInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewSubscription((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // Handle form submission for new subscription
+    const handleCreateSubscription = async (e) => {
+        e.preventDefault();
+        const userID = 'Ha6ncx164GbU3nT7THMtCVwM8M93';
+
+        try {
+            // Add new subscription to Firestore
+            await addDoc(collection(db, 'subscriptions'), {
+                userID,
+                courseID: newSubscription.courseID,
+                status: 'pending',
+            });
+            console.log("New subscription created successfully");
+
+            // Close popup after submission
+            setIsPopupOpen(false);
+        } catch (error) {
+            console.error("Error creating subscription:", error);
+        }
+    };
+
+    // Handle form input changes for the user profile
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setUser((prevUser) => ({ ...prevUser, [name]: value }));
     };
 
-
-    // Handle form submission and update user info
+    // Handle form submission for profile update
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const userId = 'Ha6ncx164GbU3nT7THMtCVwM8M93';
 
-        // Update user data in Firestore
-        const userRef = doc(db, "users", userId); // Update with the actual user ID (1)
-        await updateDoc(userRef, {
-            name: user.name, // Full name
-            email: user.email, // Email
-            phone: user.phone, // Phone number
+        await updateDoc(doc(db, "users", userId), {
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
         });
 
         console.log("User updated successfully");
@@ -106,10 +156,11 @@ const Profile = () => {
 
     return (
         <>
+            {/* <Header /> */}
             <div className='content'>
                 <div className="profile-container">
                     <div className="profile-header">
-                        <h1 style={{color: '#000', textTransform: 'capitalize'}}>{user.name}</h1>
+                        <h1 style={{ color: '#000', textTransform: 'capitalize' }}>{user.name}</h1>
                     </div>
                     <div className="profile-content">
                         <form onSubmit={handleSubmit}>
@@ -155,37 +206,36 @@ const Profile = () => {
 
                 <div className="profile-container profile-container2">
                     <h2>Courses</h2>
+                    <button onClick={() => setIsPopupOpen(true)}>Add Subscription</button>
                     <table className="status-table" style={{ color: "#000" }}>
                         <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>Course Name</th>
                                 <th>Cost</th>
-                                <th>End Date</th> {/* Add column for End Date */}
+                                <th>End Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {coursesData.map((course, index) => {
-                                const currentDate = new Date(); // تاريخ اليوم
-                                const endDate = course.endDate ? course.endDate.toDate() : null; // تحويل `endDate` إلى تاريخ
+                            {currentCourses.map((course, index) => {
+                                const currentDate = new Date();
+                                const endDate = course.endDate ? course.endDate.toDate() : null;
                                 let daysRemaining = null;
-
-                                // احسب الفرق بين التواريخ إذا كان `endDate` موجودًا
+                            
                                 if (endDate) {
-                                    const timeDiff = endDate.getTime() - currentDate.getTime(); // فرق الوقت بالملي ثانية
-                                    daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24)); // تحويل الفارق إلى أيام
+                                    const timeDiff = endDate.getTime() - currentDate.getTime();
+                                    daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
                                 }
-
-                                // تحديد اللون بناءً على عدد الأيام المتبقية
-                                let textColor = "#000"; // اللون الافتراضي (أسود)
+                            
+                                let textColor = "#000";
                                 if (daysRemaining !== null) {
                                     if (daysRemaining < 3) {
-                                        textColor = "red"; // أقل من 3 أيام: أحمر
+                                        textColor = "red";
                                     } else if (daysRemaining < 10) {
-                                        textColor = "orange"; // أقل من 10 أيام: أخضر
+                                        textColor = "orange";
                                     }
                                 }
-
+                            
                                 return (
                                     <tr key={course.id}>
                                         <td>{index + 1}</td>
@@ -193,18 +243,60 @@ const Profile = () => {
                                         <td>{course.total_cost}</td>
                                         <td style={{ color: textColor }}>
                                             {daysRemaining !== null ? `${daysRemaining} days` : 'No end date'}
-                                        </td> {/* عرض الفرق بالأيام وتطبيق اللون */}
+                                        </td>
                                     </tr>
                                 );
                             })}
                         </tbody>
-
                     </table>
-
+                    <div className="pagination" > {/*  style={{display::}} */}
+                        <button
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+                        <span>Page {currentPage}</span>
+                        <button
+                            onClick={() => setCurrentPage((prev) => (endIndex < coursesData.length ? prev + 1 : prev))}
+                            disabled={endIndex >= coursesData.length}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
+
+                {isPopupOpen && (
+                    <div className="popup">
+                        <form onSubmit={handleCreateSubscription}>
+                            <h3>Create New Subscription</h3>
+                            <div className="form-group">
+                                <label htmlFor="courseID">Course ID:</label>
+                                <select
+                                    style={{backgroundColor: 'rgb(216, 216, 216)'}}
+                                    id="courseID"
+                                    name="courseID"
+                                    value={newSubscription.courseID}
+                                    onChange={handleSubscriptionInputChange}
+                                    required
+                                >
+                                    <option value="">Select a course</option>
+                                    {allCourses.map((course) => (
+                                        <option key={course.id} value={course.id}>
+                                            {course.course_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button type="submit">Submit</button>
+                            <button type="button" onClick={() => setIsPopupOpen(false)}>Close</button>
+                        </form>
+                    </div>
+                )}
             </div>
+            {/* <Footer /> */}
         </>
     );
-};
+}
 
 export default Profile;
