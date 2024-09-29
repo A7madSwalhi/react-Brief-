@@ -249,7 +249,7 @@ useEffect(() => {
                             })}
                         </tbody>
                     </table>
-                    <div className="pagination" > {/*  style={{display::}} */}
+                    <div className="pagination" style={{ display: 5 >= coursesData.length ? 'none' : 'inline' }} > {/*  style={{display:: 5 > coursesData.length ? 'none' : 'inline' }} */}  
                         <button
                             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                             disabled={currentPage === 1}
